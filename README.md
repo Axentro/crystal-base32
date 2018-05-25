@@ -1,5 +1,7 @@
 # crystal-base32
 
+[![Build Status](https://travis-ci.org/SushiChain/crystal-base32.svg?branch=master)](https://travis-ci.org/SushiChain/crystal-base32)
+
 This shard contains base32, A Crystal library for encoding and decoding in base32 as per RFC 3548
 
 ## Installation
