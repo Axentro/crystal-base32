@@ -20,19 +20,20 @@ class Base32
     result
   end
 
-  def self.decode(str)
+  def self.decode(str) : String
     chunks(str, 8).map(&.decode).flatten.join
   end
 
-  def self.decode_as_bytes(str)
-    chunks(str, 8).map(&.decode_as_bytes).flatten
+  def self.decode_as_bytes(str) : Bytes
+    r = chunks(str, 8).map(&.decode_as_bytes).flatten
+    r.to_unsafe.to_slice(r.size)
   end
 
   def self.encode(str)
     chunks(str, 5).map(&.encode).flatten.join
   end
 
-  def self.random_base32(length = 16, padding = true)
+  def self.random_base32(length = 16, padding = true) : String
     random = ""
     Random::Secure.random_bytes(length).each do |b|
       random += self.table[b % 32].to_s
@@ -55,28 +56,12 @@ class Chunk
   end
 
   def decode
-    bytes = @bytes.take_while { |c| c != 61 } # strip padding
-    n = (bytes.size * 5.0 / 8.0).floor.to_i64
-    p = bytes.size < 8 ? 5 - (n * 8) % 5 : 0
-    c = bytes.reduce(0) do |m, o|
-      m = BigInt.new(m)
-      i = Base32.table.index(o.chr)
-      raise Exception.new("invalid character '#{o.chr}'") if i.nil?
-      (m << 5) + i
-    end >> p
+    n, c = internal_decode
     (0..n - 1).to_a.reverse.map { |i| ((c >> i * 8) & 0xff).to_i32.chr }
   end
 
-  def decode_as_bytes : Array(UInt8)
-    bytes = @bytes.take_while { |c| c != 61 } # strip padding
-    n = (bytes.size * 5.0 / 8.0).floor.to_i64
-    p = bytes.size < 8 ? 5 - (n * 8) % 5 : 0
-    c = bytes.reduce(0) do |m, o|
-      m = BigInt.new(m)
-      i = Base32.table.index(o.chr)
-      raise Exception.new("invalid character '#{o.chr}'") if i.nil?
-      (m << 5) + i
-    end >> p
+  def decode_as_bytes
+    n, c = internal_decode
     (0..n - 1).to_a.reverse.map { |i| ((c >> i * 8) & 0xff).to_u8 }
   end
 
@@ -88,5 +73,18 @@ class Chunk
       (m << 8) + o
     end << p
     [(0..n - 1).to_a.reverse.map { |i| Base32.table[((c >> i * 5) & 0x1f)].to_s }, ("=" * (8 - n))]
+  end
+
+  private def internal_decode
+    bytes = @bytes.take_while { |c| c != 61 } # strip padding
+    n = (bytes.size * 5.0 / 8.0).floor.to_i64
+    p = bytes.size < 8 ? 5 - (n * 8) % 5 : 0
+    c = bytes.reduce(0) do |m, o|
+      m = BigInt.new(m)
+      i = Base32.table.index(o.chr)
+      raise Exception.new("invalid character '#{o.chr}'") if i.nil?
+      (m << 5) + i
+    end >> p
+    {n, c}
   end
 end
