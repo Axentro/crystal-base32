@@ -21,6 +21,9 @@ describe Base32 do
   it "should work with other characters" do
     assert_encode_and_decode("FA======", "(")
   end
+  it "should decode to bytes" do
+    Base32.decode_as_bytes("NY4A5CPJZ46LXZCP").should eq([110_u8, 56_u8, 14_u8, 137_u8, 233_u8, 207_u8, 60_u8, 187_u8, 228_u8, 79_u8])
+  end
   it "should produce a random_base32" do
     Base32.random_base32.should match(/^[A-Z2-7]+$/)
   end

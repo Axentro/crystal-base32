@@ -24,6 +24,10 @@ class Base32
     chunks(str, 8).map(&.decode).flatten.join
   end
 
+  def self.decode_as_bytes(str)
+    chunks(str, 8).map(&.decode_as_bytes).flatten
+  end
+
   def self.encode(str)
     chunks(str, 5).map(&.encode).flatten.join
   end
@@ -61,6 +65,19 @@ class Chunk
       (m << 5) + i
     end >> p
     (0..n - 1).to_a.reverse.map { |i| ((c >> i * 8) & 0xff).to_i32.chr }
+  end
+
+  def decode_as_bytes : Array(UInt8)
+    bytes = @bytes.take_while { |c| c != 61 } # strip padding
+    n = (bytes.size * 5.0 / 8.0).floor.to_i64
+    p = bytes.size < 8 ? 5 - (n * 8) % 5 : 0
+    c = bytes.reduce(0) do |m, o|
+      m = BigInt.new(m)
+      i = Base32.table.index(o.chr)
+      raise Exception.new("invalid character '#{o.chr}'") if i.nil?
+      (m << 5) + i
+    end >> p
+    (0..n - 1).to_a.reverse.map { |i| ((c >> i * 8) & 0xff).to_u8 }
   end
 
   def encode
