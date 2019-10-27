@@ -15,7 +15,7 @@ module Base32
   end
 
   def encode(str : String) : String
-    mio = IO::Memory.new((str.bytesize / 5 * 8))
+    mio = IO::Memory.new((str.bytesize / 5 * 8).to_i)
     str.to_slice.each_slice(5) do |slice|
       bits = 0.to(slice.size - 1).reduce(0_u64) { |acc, i| acc | (slice[i].to_u64 << (4 - i)*8) }
       7.to(0).reduce(0x1F_u64 << 35) do |acc, i|
@@ -42,7 +42,7 @@ module Base32
   end
 
   def decode_as_bytes(str : String) : Bytes
-    mio = IO::Memory.new((str.bytesize / 8) * 5)
+    mio = IO::Memory.new(((str.bytesize / 8) * 5).to_i)
     str.to_slice.reject { |s| ['\n'.ord, '\r'.ord, '='.ord].includes?(s) }.each_slice(8) do |slice|
       bits = 0.to(slice.size - 1).reduce(0_u64) { |acc, i| acc | table_map[slice[i].chr].to_u64 << (7 - i)*5 }
       4.to(0).reduce(0xFF_u64 << 32) do |acc, i|
